@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>議事録作成AIエージェント</title>
+    <script src="static/script.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        /* ヘッダーのデザイン */
+        header {
+            background-color: #4CAF50;  /* グリーンの背景 */
+            color: white;               /* テキストの色を白に */
+            padding: 15px;              /* ヘッダー内の余白 */
+            text-align: center;         /* テキストを中央揃え */
+            font-size: 1.5em;           /* テキストのサイズを調整 */
+            font-weight: bold;          /* テキストを太字に */
+            position: relative;         /* 絶対配置を有効にするための相対配置 */
+        }
+
+        /* ヘッダー右上のテキスト */
+        .header-right {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.8em;           /* テキストを小さく */
+            font-style: italic;         /* イタリックに */
+            color: white;               /* 白色の文字 */
+        }
+
+        /* 他のスタイル */
+        #loading {
+            display: none;
+            font-size: 1.5em;
+            color: #ff0000;
+            text-align: left; /* 左寄せ */
+            margin-top: 20px; /* 上に余白を追加 */
+        }
+        .tabs {
+            display: flex;
+            margin-top: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #f1f1f1;
+            margin-right: 5px;
+            border: 1px solid #ccc;
+            border-bottom: none;
+        }
+        .tab.active {
+            background-color: #fff;
+            border-bottom: 2px solid #000;
+        }
+        .tab-content {
+            display: none;
+            border: 1px solid #ccc;
+            padding: 20px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .transcription-text {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .icon-container {
+            display: inline-block;
+            text-align: center;
+            margin: 10px;
+        }
+        .file-icon, .upload-icon {
+            font-size: 2em;
+            cursor: pointer;
+            color: #007bff;
+            display: block;
+            margin: 0 auto;
+        }
+        .upload-icon {
+            color: #28a745;
+        }
+        #fileInput {
+            display: none;
+        }
+        #fileName {
+            font-size: 1em;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        /* テキストエリアの幅と高さをウィンドウサイズに合わせる */
+        textarea {
+            width: 100%;                /* 横幅を100%に設定 */
+            min-width: 300px;            /* 最小幅を設定 */
+            max-width: 100%;             /* 最大幅をウィンドウサイズに追従 */
+            height: 70vh;                /* 縦幅をウィンドウの70%に設定 */
+            box-sizing: border-box;      /* パディングやボーダーを含めてサイズを計算 */
+            font-size: 1em;              /* フォントサイズを調整 */
+            padding: 10px;               /* 内側の余白を追加 */
+        }
+        .attention {
+            font-size: 8pt;              /* フォントサイズを調整 */
+            color: red;
+        }
+        .file-name {
+            font-size: 8pt;              /* フォントサイズを調整 */
+            color: black;
+        }
+        /* 参加者コンテナのスタイルをフレックスボックスで横並びに設定 */
+        #participantsContainer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px; /* 入力欄間のスペースを設定 */
+        }
+
+        #participantsContainer label,
+        #participantsContainer input[type="text"] {
+            width: 120px;
+        }
+
+        #participantsContainer label {
+            text-align: right;
+        }
+
+    </style>
+</head>
+<body>
+    <!-- ヘッダー部分 -->
+    <header>
+        議事録作成AIエージェント🤖
+        <div class="header-right">Trial operation by FGOT InnoLab</div> <!-- 右上のテキスト -->
+    </header>
+    
+    <!-- ファイル選択ボタン（アイコン＋文字） -->
+    <div class="icon-container">
+        <label for="fileInput">
+            <i class="fas fa-file-alt file-icon"></i>
+        </label>
+        <span>ファイル選択</span>
+        <span id="fileName"></span> <!-- ファイル名を表示する要素 -->
+    </div>
+    <input type="file" id="fileInput" accept="audio/*,video/mp4">
+    
+    <!-- アップロードボタン（アイコン＋文字） -->
+    <div class="icon-container">
+        <i class="fas fa-file-signature upload-icon" id="uploadButton"></i>
+        <span>議事録作成</span>
+    </div>
+    <div class="file-name" id="fileNameDisplay"></div> <!-- ファイル名を表示する要素を追加 -->
+    <div class="attention">※動画・音声ファイル</div>
+
+    <!-- 変換中... の文字とアイコンを左寄せで表示 -->
+    <div id="loading">
+        <i class="fas fa-sync fa-spin"></i> 作成中...
+    </div>
+
+    <!-- 上級者モードのチェックボックスを追加 -->
+    <label>
+        <input type="checkbox" id="showRawTabCheckbox"> 文字おこし表示
+    </label> 
+    
+    <label>
+        <input type="checkbox" id="advancedModeCheckbox"> プロンプト上級者
+    </label>
+
+    <div class="tabs">
+        <div class="tab active" id="rawTab">文字おこし</div> <!-- タブの名前を変更 -->
+        <div class="tab" id="transcriptionTab">議事録</div>
+        <div class="tab" id="participantTab">プロンプト設定（初心者）</div> <!-- 新しいタブ追加 -->
+        <div class="tab" id="promptTab">プロンプト設定（上級者）</div> <!-- 新しいプロンプトタブ -->
+    </div>
+
+    <div class="tab-content active" id="rawContent">
+        <h2>文字おこし:</h2> <!-- セクションタイトルを変更 -->
+        <div id="rawTranscriptionResult" class="transcription-text"></div>
+    </div>
+
+    <div class="tab-content" id="transcriptionContent">
+        <h2>議事録:</h2>
+        <div id="transcriptionResult" class="transcription-text"></div>
+    </div>
+
+    <div class="tab-content" id="promptContent">
+        <h2>プロンプト編集:</h2>
+        <!-- テキストエリアの幅と高さをウィンドウサイズに追従させる -->
+        <label>
+            <input type="checkbox" id="defaultPromptCheckbox"> デフォルト
+        </label>
+        <textarea id="promptTextarea" placeholder="ここにテキストを入力してください"></textarea>
+    </div>
+    <div class="tab-content" id="participantContent"> <!-- 新しいタブのコンテンツ -->
+        <h2>参加者と日付の入力:</h2>
+    
+        <!-- 日付の入力欄 -->
+        <label for="meetingDate">日付:</label>
+        <input type="date" id="meetingDate">
+        <br><br>
+    
+        <!-- 10名分の参加者入力欄 -->
+        <h3>参加者名:</h3>
+        <div id="participantsContainer">
+            <input type="text" id="participant1" placeholder="参加者1">
+            <br>
+            <input type="text" id="participant2" placeholder="参加者2">
+            <br>
+            <input type="text" id="participant3" placeholder="参加者3">
+            <br>
+            <input type="text" id="participant4" placeholder="参加者4">
+            <br>
+            <input type="text" id="participant5" placeholder="参加者5">
+            <br>
+            <input type="text" id="participant6" placeholder="参加者6">
+            <br>
+            <input type="text" id="participant7" placeholder="参加者7">
+            <br>
+            <input type="text" id="participant8" placeholder="参加者8">
+            <br>
+            <input type="text" id="participant9" placeholder="参加者9">
+            <br>
+            <input type="text" id="participant10" placeholder="参加者10">
+        </div>
+    </div>    
+</body>
+</html>
