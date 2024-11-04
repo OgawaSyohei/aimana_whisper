@@ -92,6 +92,7 @@ document.getElementById('defaultPromptCheckbox').addEventListener('change', func
 
 // 議事録作成処理
 function createMinutesFromTranscription(transcriptionText, promptText) {
+    console.log('createMinutesFromTranscription')
     const formData = new FormData();
     formData.append('transcription', transcriptionText);  // 既存の文字おこしデータを送信
     formData.append('prompt', promptText);  // プロンプトを送信
@@ -225,7 +226,7 @@ document.getElementById('fileInput').addEventListener('change', function() {
             fileNameDisplay.textContent = '音声ファイル：' + fileName;
 
             // 新しいファイルが選択された場合、Whisperの処理を開始
-            // triggerWhisperProcessing();
+            triggerWhisperProcessing();
         } else {
             fileNameDisplay.textContent = '音声ファイル：';
         }
@@ -265,20 +266,24 @@ document.addEventListener("DOMContentLoaded", function() {
         // チェックボックスの初期状態に応じて「文字おこし」タブを表示
         if (showRawTabCheckbox.checked) {
             rawTab.style.display = "block";
+            rawContent.style.display = "block"; // コンテンツも表示
+            switchTab("raw"); // 初期状態で文字おこしタブをアクティブに
         } else {
             rawTab.style.display = "none";
-            rawContent.style.display = "none";  // タブを非表示にする際、内容も非表示に
+            rawContent.style.display = "none";
         }
     
         // チェックボックスが変更されたときに「文字おこし」タブを表示・非表示にする
         showRawTabCheckbox.addEventListener("change", function() {
             if (showRawTabCheckbox.checked) {
                 rawTab.style.display = "block";
+                rawContent.style.display = "block";
+                switchTab("raw"); // タブを表示したらアクティブに
             } else {
                 rawTab.style.display = "none";
+                rawContent.style.display = "none";
                 if (rawTab.classList.contains("active")) {
-                    // 他のタブに切り替え（議事録タブに切り替える例）
-                    switchTab("transcription");
+                    switchTab("transcription"); // 他のタブに切り替える
                 }
             }
         });

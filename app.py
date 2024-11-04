@@ -56,8 +56,8 @@ class TranscriptionApp:
 
         # JSONで生データと要約データを一緒に返す
         return jsonify({
-            'transcription': '議事録',
-            'raw_transcription': '文字起こし'
+            'transcription': '議事録・文字起こし',
+            'raw_transcription': '議事録・文字起こし'
         })
 
     def create_minutes(self):
@@ -76,14 +76,14 @@ class TranscriptionApp:
 
         messages = [{"role": "system", "content": f"{text}"}]
 
-        completion = self.client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages
-        )
+        # completion = self.client.chat.completions.create(
+        #     model="gpt-4o-mini",
+        #     messages=messages
+        # )
 
         # 議事録を生成して返す
         return jsonify({
-            'transcription': completion.choices[0].message.content
+            'transcription': '議事録のみ'
         })
 
     def get_prompt(self):
