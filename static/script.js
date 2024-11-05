@@ -1,16 +1,29 @@
+let lastUploadedFile = null;  // 前回アップロードされたファイルを保持
+
 document.getElementById('uploadButton').addEventListener('click', function() {
     const fileInput = document.getElementById('fileInput');
     const file = fileInput.files[0];
-
-    // プロンプトタブの内容を取得
     const promptText = document.getElementById('promptTextarea').value;
-    console.log(promptText)
+    const meetingDate = document.getElementById('meetingDate').value;
+    const isAdvancedModeChecked = document.getElementById('advancedModeCheckbox').checked;
+    let prompt = null
+  
+    if (isAdvancedModeChecked){
+        prompt = promptText
+    }
+    else {
+        prompt = meetingDate
+    }
 
+    
     const rawTranscriptionResult = document.getElementById('rawTranscriptionResult').innerText;  // 既にある文字おこしデータ
 
-    // 既に文字おこしされたデータがある場合は、議事録作成のみを実施
-    if (rawTranscriptionResult.trim() !== "") {
-        createMinutesFromTranscription(rawTranscriptionResult, promptText);  // プロンプトを一緒に送信
+    // 新しいファイルがアップロードされているか確認
+    const isNewFile = file && (!lastUploadedFile || lastUploadedFile.name !== file.name || lastUploadedFile.size !== file.size);
+
+    if (rawTranscriptionResult.trim() !== "" && !isNewFile) {
+        // 新しいファイルがアップロードされておらず、既に文字おこしデータがある場合は議事録作成のみを実施
+        createMinutesFromTranscription(rawTranscriptionResult, prompt);  // プロンプトを一緒に送信
         return;
     }
 
@@ -20,9 +33,11 @@ document.getElementById('uploadButton').addEventListener('click', function() {
         return;
     }
 
+    lastUploadedFile = file;  // 新しいファイルをlastUploadedFileに更新
+
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('prompt', promptText);  // プロンプトテキストも一緒に送信
+    formData.append('prompt', promptText);
 
     const loadingElement = document.getElementById('loading');
     loadingElement.style.display = 'block'; // ローディング表示
@@ -79,6 +94,7 @@ document.getElementById('defaultPromptCheckbox').addEventListener('change', func
                     promptTextarea.value = data.prompt;
                     // promptTextarea.disabled = true; // 編集不可
                 }
+                savePrompt(); // デフォルトプロンプト読み込み後に保存
             })
             .catch(error => {
                 promptTextarea.value = error.message;
@@ -92,7 +108,6 @@ document.getElementById('defaultPromptCheckbox').addEventListener('change', func
 
 // 議事録作成処理
 function createMinutesFromTranscription(transcriptionText, promptText) {
-    console.log('createMinutesFromTranscription')
     const formData = new FormData();
     formData.append('transcription', transcriptionText);  // 既存の文字おこしデータを送信
     formData.append('prompt', promptText);  // プロンプトを送信
@@ -138,7 +153,6 @@ document.getElementById('promptTab').addEventListener('click', function() {
 document.getElementById('participantTab').addEventListener('click', function() {
     switchTab('participant');
 });
-
 
 function switchTab(tab) {
     const tabs = {
@@ -225,8 +239,6 @@ document.getElementById('fileInput').addEventListener('change', function() {
             const fileName = fileInput.files[0].name;
             fileNameDisplay.textContent = '音声ファイル：' + fileName;
 
-            // 新しいファイルが選択された場合、Whisperの処理を開始
-            triggerWhisperProcessing();
         } else {
             fileNameDisplay.textContent = '音声ファイル：';
         }
@@ -235,7 +247,7 @@ document.getElementById('fileInput').addEventListener('change', function() {
 
 document.addEventListener("DOMContentLoaded", function() {
     // 初期状態で文字おこしタブのみをアクティブにする
-    switchTab("raw");
+    switchTab("transcription");
 
     const advancedCheckbox = document.getElementById("advancedModeCheckbox");
     const participantTab = document.getElementById("participantTab");
