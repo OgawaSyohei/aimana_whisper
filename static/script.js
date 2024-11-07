@@ -5,14 +5,20 @@ document.getElementById('uploadButton').addEventListener('click', function() {
     const file = fileInput.files[0];
     const promptText = document.getElementById('promptTextarea').value;
     const meetingDate = document.getElementById('meetingDate').value;
+    const participantsContainer = document.getElementById("participantsContainer");
+    const participants = Array.from(participantsContainer.querySelectorAll("input[type='text']"))
+                            .map(input => input.value);
     const isAdvancedModeChecked = document.getElementById('advancedModeCheckbox').checked;
-    let prompt = null
-  
+    
+    let prompt = {};
+    prompt.isAdvancedModeChecked = isAdvancedModeChecked
+
     if (isAdvancedModeChecked){
-        prompt = promptText
+        prompt.prompt = promptText
     }
     else {
-        prompt = meetingDate
+        prompt.meetingDate = meetingDate
+        prompt.participants = participants
     }
 
     
@@ -37,7 +43,15 @@ document.getElementById('uploadButton').addEventListener('click', function() {
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('prompt', promptText);
+    formData.append('isAdvancedModeChecked', isAdvancedModeChecked);
+
+    if (isAdvancedModeChecked){
+        formData.append('prompt', promptText);
+    }
+    else {
+        formData.append('meetingDate', meetingDate);
+        formData.append('participants', JSON.stringify(participants));
+    }
 
     const loadingElement = document.getElementById('loading');
     loadingElement.style.display = 'block'; // ローディング表示
@@ -107,10 +121,18 @@ document.getElementById('defaultPromptCheckbox').addEventListener('change', func
 
 
 // 議事録作成処理
-function createMinutesFromTranscription(transcriptionText, promptText) {
+function createMinutesFromTranscription(transcriptionText, prompt) {
     const formData = new FormData();
     formData.append('transcription', transcriptionText);  // 既存の文字おこしデータを送信
-    formData.append('prompt', promptText);  // プロンプトを送信
+    formData.append('isAdvancedModeChecked', prompt.isAdvancedModeChecked);
+
+    if (prompt.isAdvancedModeChecked){
+        formData.append('prompt', prompt.prompt);
+    }
+    else {
+        formData.append('meetingDate', prompt.meetingDate);
+        formData.append('participants', JSON.stringify(prompt.participants));
+    }
 
     const loadingElement = document.getElementById('loading');
     loadingElement.style.display = 'block'; // ローディング表示

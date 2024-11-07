@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 # import whisper
 import os
 # from openai import OpenAI
+import json
 
 class TranscriptionApp:
     def __init__(self):
@@ -40,10 +41,17 @@ class TranscriptionApp:
         os.remove(file_path)
 
         # クライアント側から送られたプロンプトデータを使用する
-        prompt_text = request.form.get('prompt')  # クライアントからプロンプトを取得
+        isAdvancedModeChecked = request.form.get('isAdvancedModeChecked')
 
-        if not prompt_text:
-            prompt_text = '以下の内容を議事録形式で詳細にまとめてください。'  # デフォルトのプロンプト
+        if isAdvancedModeChecked=='true':
+            prompt = request.form.get('prompt')
+        else:
+            participants = json.loads(request.form.get('participants'))
+            meetingDate = request.form.get('meetingDate')
+            return jsonify({
+                'transcription': '実装中',
+                'raw_transcription': '実装中'
+            })
 
         text = 'Whisoe'
 
@@ -63,16 +71,21 @@ class TranscriptionApp:
     def create_minutes(self):
         # クライアントからの文字おこしデータを取得
         transcription = request.form.get('transcription')
-        prompt_text = request.form.get('prompt')  # プロンプトを取得
+        isAdvancedModeChecked = request.form.get('isAdvancedModeChecked')
 
         if not transcription:
             return jsonify({'error': 'No transcription data provided'}), 400
 
-        if not prompt_text:
-            prompt_text = '以下の内容を議事録形式で詳細にまとめてください。'  # デフォルトのプロンプト
-
+        if isAdvancedModeChecked=='true':
+            prompt = request.form.get('prompt')
+        else:
+            participants = json.loads(request.form.get('participants'))
+            meetingDate = request.form.get('meetingDate')
+            return jsonify({
+                'transcription': '実装中'
+            })        
         # 議事録作成用のプロンプトを生成
-        text = f'{prompt_text} {transcription}'
+        text = f'{prompt} {transcription}'
 
         messages = [{"role": "system", "content": f"{text}"}]
 
