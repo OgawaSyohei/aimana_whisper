@@ -48,12 +48,9 @@ class TranscriptionApp:
         else:
             participants = json.loads(request.form.get('participants'))
             meetingDate = request.form.get('meetingDate')
-            return jsonify({
-                'transcription': '実装中',
-                'raw_transcription': '実装中'
-            })
+            prompt = self.set_script_beginner(participants, meetingDate)
 
-        text = 'Whisoe'
+        # text = f'{prompt} {transcribed_text}'
 
         # messages = [{"role": "system", "content": text}]
 
@@ -64,8 +61,8 @@ class TranscriptionApp:
 
         # JSONで生データと要約データを一緒に返す
         return jsonify({
-            'transcription': '議事録・文字起こし',
-            'raw_transcription': '議事録・文字起こし'
+            'transcription': f'議事録・文字起こし{prompt}',
+            'raw_transcription': f'議事録・文字起こし{prompt}'
         })
 
     def create_minutes(self):
@@ -81,13 +78,11 @@ class TranscriptionApp:
         else:
             participants = json.loads(request.form.get('participants'))
             meetingDate = request.form.get('meetingDate')
-            return jsonify({
-                'transcription': '実装中'
-            })        
+            prompt = self.set_script_beginner(participants, meetingDate)
         # 議事録作成用のプロンプトを生成
-        text = f'{prompt} {transcription}'
+        # text = f'{prompt} {transcription}'
 
-        messages = [{"role": "system", "content": f"{text}"}]
+        # messages = [{"role": "system", "content": f"{text}"}]
 
         # completion = self.client.chat.completions.create(
         #     model="gpt-4o-mini",
@@ -96,7 +91,7 @@ class TranscriptionApp:
 
         # 議事録を生成して返す
         return jsonify({
-            'transcription': '議事録のみ'
+            'transcription': f'議事録のみ{prompt}'
         })
 
     def get_prompt(self):
@@ -110,6 +105,28 @@ class TranscriptionApp:
 
     def favicon(self):
         return '', 204  # No Content
+    
+    def set_script_beginner(self, participants, meetingDate):
+        # スクリプトをファイルから読み込む
+        with open('prompt_beginner.txt', 'r', encoding='utf-8') as file:
+            script = file.read()
+
+        if meetingDate:
+            result_meetingDate = meetingDate
+        else:
+            result_meetingDate = '「未記入」と記載してください'
+
+        if any(participants):  # 配列に一つでも値があればTrue
+            result_participants = ",".join([name for name in participants if name])
+        else:
+            result_participants = '「未記入」と記載してください'
+
+        # プレースホルダーの置き換え
+        script = script.format(
+            meetingDate = result_meetingDate,
+            participants = result_participants,
+        )
+        return script
 
 # クラスの外でサーバーを立ち上げる処理
 transcription_app = TranscriptionApp()

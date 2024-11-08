@@ -9,7 +9,11 @@ document.getElementById('uploadButton').addEventListener('click', function() {
     const participants = Array.from(participantsContainer.querySelectorAll("input[type='text']"))
                             .map(input => input.value);
     const isAdvancedModeChecked = document.getElementById('advancedModeCheckbox').checked;
-    
+
+    // ローカルストレージに meetingDate と participants を保存
+    localStorage.setItem('meetingDate', meetingDate);
+    localStorage.setItem('participants', JSON.stringify(participants));
+
     let prompt = {};
     prompt.isAdvancedModeChecked = isAdvancedModeChecked
 
@@ -400,4 +404,24 @@ function loadSavedTranscription() {
 // 初期化時に保存されたデータを読み込む
 window.addEventListener('load', function() {
     loadSavedTranscription();
+    const savedMeetingDate = localStorage.getItem('meetingDate');
+    const savedParticipants = JSON.parse(localStorage.getItem('participants') || '[]');
+    
+    if (savedMeetingDate) {
+        document.getElementById('meetingDate').value = savedMeetingDate;
+    }
+    
+    if (savedParticipants.length > 0) {
+        const participantsContainer = document.getElementById("participantsContainer");
+        
+        // 参加者フィールドをクリアしてからロード
+        participantsContainer.innerHTML = '';
+        
+        savedParticipants.forEach(participant => {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = participant;
+            participantsContainer.appendChild(input);
+        });
+    }
 });
