@@ -9,6 +9,12 @@ document.getElementById('uploadButton').addEventListener('click', function() {
     const participants = Array.from(participantsContainer.querySelectorAll("input[type='text']"))
                             .map(input => input.value);
     const isAdvancedModeChecked = document.getElementById('advancedModeCheckbox').checked;
+    const fileFormat = document.getElementById('fileFormat');
+    let fileFormatData = fileFormat.files[0];
+    // ファイルが選択されていない場合は警告
+    if (!fileFormatData) {
+        fileFormatData = null
+    }    
 
     // ローカルストレージに meetingDate と participants を保存
     localStorage.setItem('meetingDate', meetingDate);
@@ -23,9 +29,10 @@ document.getElementById('uploadButton').addEventListener('click', function() {
     else {
         prompt.meetingDate = meetingDate
         prompt.participants = participants
+        prompt.fileFormatData = fileFormatData
     }
 
-    
+
     const rawTranscriptionResult = document.getElementById('rawTranscriptionResult').innerText;  // 既にある文字おこしデータ
 
     // 新しいファイルがアップロードされているか確認
@@ -55,6 +62,7 @@ document.getElementById('uploadButton').addEventListener('click', function() {
     else {
         formData.append('meetingDate', meetingDate);
         formData.append('participants', JSON.stringify(participants));
+        formData.append('fileFormatData', fileFormatData);
     }
 
     const loadingElement = document.getElementById('loading');
@@ -136,6 +144,7 @@ function createMinutesFromTranscription(transcriptionText, prompt) {
     else {
         formData.append('meetingDate', prompt.meetingDate);
         formData.append('participants', JSON.stringify(prompt.participants));
+        formData.append('fileFormatData', prompt.fileFormatData);
     }
 
     const loadingElement = document.getElementById('loading');
@@ -327,6 +336,9 @@ document.addEventListener("DOMContentLoaded", function() {
         });
 });
 
+document.getElementById('fileFormat').addEventListener('change', function() {
+    const fileName = this.files[0] ? this.files[0].name : "なし";
+});
 
 // Whisperの処理を開始する関数
 function triggerWhisperProcessing() {

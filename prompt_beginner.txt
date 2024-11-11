@@ -6,3 +6,6 @@
 
 #お店情報
 {participants}
+
+#フォーマット
+{fileFormatData}

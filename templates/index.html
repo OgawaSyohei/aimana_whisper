@@ -121,6 +121,12 @@
             text-align: right;
         }
 
+        #fileFormat {
+        font-size: 1em;           /* フォントサイズを調整 */
+        padding: 10px;            /* 内側の余白を追加 */
+        width: 100%;              /* 横幅を100%に設定して他と揃える */
+        box-sizing: border-box;   /* ボーダーとパディングを含めて幅を計算 */
+    }
     </style>
 </head>
 <body>
@@ -217,6 +223,9 @@
             <input type="text" id="participant9" placeholder="参加者9">
             <br>
             <input type="text" id="participant10" placeholder="参加者10">
+        </div>
+        <h3>フォーマット</h3>
+            <input type="file" id="fileFormat" accept=".xlsx, .xls, .docx, .doc, .txt">
         </div>
     </div>
 </body>

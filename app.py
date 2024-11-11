@@ -3,6 +3,9 @@ from flask import Flask, render_template, request, jsonify
 import os
 # from openai import OpenAI
 import json
+from docx import Document
+import openpyxl
+import io
 
 class TranscriptionApp:
     def __init__(self):
@@ -48,8 +51,13 @@ class TranscriptionApp:
         else:
             participants = json.loads(request.form.get('participants'))
             meetingDate = request.form.get('meetingDate')
-            prompt = self.set_script_beginner(participants, meetingDate)
-
+            if 'fileFormatData' in request.files:
+                fileFormatData = request.files['fileFormatData']
+                filename = fileFormatData.filename
+                fileFormatDataStr = self.extract_text(fileFormatData, filename)
+            else :
+                fileFormatDataStr = ''
+            prompt = self.set_script_beginner(participants, meetingDate, fileFormatDataStr)
         # text = f'{prompt} {transcribed_text}'
 
         # messages = [{"role": "system", "content": text}]
@@ -78,7 +86,13 @@ class TranscriptionApp:
         else:
             participants = json.loads(request.form.get('participants'))
             meetingDate = request.form.get('meetingDate')
-            prompt = self.set_script_beginner(participants, meetingDate)
+            if 'fileFormatData' in request.files:
+                fileFormatData = request.files['fileFormatData']
+                filename = fileFormatData.filename
+                fileFormatDataStr = self.extract_text(fileFormatData, filename)
+            else :
+                fileFormatDataStr = ''
+            prompt = self.set_script_beginner(participants, meetingDate, fileFormatDataStr)
         # 議事録作成用のプロンプトを生成
         # text = f'{prompt} {transcription}'
 
@@ -106,7 +120,7 @@ class TranscriptionApp:
     def favicon(self):
         return '', 204  # No Content
     
-    def set_script_beginner(self, participants, meetingDate):
+    def set_script_beginner(self, participants, meetingDate, fileFormatData):
         # スクリプトをファイルから読み込む
         with open('prompt_beginner.txt', 'r', encoding='utf-8') as file:
             script = file.read()
@@ -125,8 +139,46 @@ class TranscriptionApp:
         script = script.format(
             meetingDate = result_meetingDate,
             participants = result_participants,
+            fileFormatData = fileFormatData,
         )
         return script
+        
+    def extract_text_from_txt(self, file_data):
+        """テキストファイルから文字列を抽出する関数"""
+        content = file_data.read().decode('utf-8')
+        return content
+
+    def extract_text_from_docx(self, file_data):
+        """Wordファイルから文字列を抽出する関数"""
+        doc = Document(file_data)
+        content = [paragraph.text for paragraph in doc.paragraphs]
+        return '\n'.join(content)
+
+    def extract_text_from_excel(self, file_data):
+        """Excelファイルから文字列を抽出する関数"""
+        try:
+            file_data.seek(0)
+            file_data = io.BytesIO(file_data.read())
+            wb = openpyxl.load_workbook(file_data, data_only=True)
+            content = []
+            for sheet in wb.sheetnames:
+                ws = wb[sheet]
+                for row in ws.iter_rows(values_only=True):
+                    row_text = [str(cell) if cell is not None else '' for cell in row]
+                    content.append('\t'.join(row_text))
+            return '\n'.join(content)
+        except Exception as e:
+            return f"Excelファイルの読み取り中にエラーが発生しました: {e}"
+
+    def extract_text(self, file_data, filename):
+        """ファイル形式に応じて適切な関数を呼び出して文字列を抽出する関数"""
+        file_data.seek(0)  # ファイルポインタを先頭に戻す
+        if filename.endswith('.txt'):
+            return self.extract_text_from_txt(file_data)
+        elif filename.endswith('.docx'):
+            return self.extract_text_from_docx(file_data)
+        elif filename.endswith('.xlsx'):
+            return self.extract_text_from_excel(file_data)
 
 # クラスの外でサーバーを立ち上げる処理
 transcription_app = TranscriptionApp()
